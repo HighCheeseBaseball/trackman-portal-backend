@@ -34,7 +34,9 @@ if (!fs.existsSync(videosDir)) {
 // Simple user database (we'll store in memory for now)
 let users = [
   { id: 1, username: "dom.stagliano", password: "password123", name: "Dom Stagliano", email: "stags@example.com" },
-  { id: 2, username: "michael.kelly", password: "password123", name: "Michael Kelly", email: "michael@example.com" }
+  { id: 2, username: "michael.kelly", password: "password123", name: "Michael Kelly", email: "michael@example.com" },
+  { id: 3, username: "spencer.stockton", password: "Luzardo", name: "Spencer Stockton", email: "stockton@test.com" },
+
 ];
 
 // Endpoint to fetch session data and download videos (MOCK VERSION)
