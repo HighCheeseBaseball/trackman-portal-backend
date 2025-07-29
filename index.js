@@ -46,7 +46,8 @@ app.get('/api/fetch-videos', async (req, res) => {
     { player: "Dom Stagliano", date: "2025-07-18", filename: "Stags_07_18_P01.mp4" },
     { player: "Dom Stagliano", date: "2025-07-18", filename: "Stags_07_18_P02.mp4" },
     { player: "Michael Kelly", date: "2025-07-26", filename: "Michael_Kelly_07_26_P01.mp4" },
-    {player: "Michael Kelly", date: "2025-07-26", filename: "Michael_Kelly_07_26_P02.mp4" }
+    {player: "Michael Kelly", date: "2025-07-26", filename: "Michael_Kelly_07_26_P02.mp4" },
+    {player: "Spencer Stockton", date: "2025-07-26", filename: "Luzardo Side.mp4" }
   ];
   
   // Filter by player if requested
