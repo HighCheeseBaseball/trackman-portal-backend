@@ -36,7 +36,6 @@ let users = [
   { id: 1, username: "dom.stagliano", password: "password123", name: "Dom Stagliano", email: "stags@example.com" },
   { id: 2, username: "michael.kelly", password: "password123", name: "Michael Kelly", email: "michael@example.com" },
   { id: 3, username: "spencer.stockton", password: "Luzardo", name: "Spencer Stockton", email: "stockton@test.com" },
-
 ];
 
 // Endpoint to fetch session data and download videos (MOCK VERSION)
@@ -72,6 +71,35 @@ app.post('/api/login', (req, res) => {
   } else {
     res.status(401).json({ success: false, message: "Invalid credentials" });
   }
+});
+
+// User registration endpoint
+app.post('/api/register', (req, res) => {
+  const { username, password, name, email } = req.body;
+  
+  // Check if user already exists
+  if (users.find(user => user.username === username)) {
+    return res.status(400).json({ success: false, message: 'Username already exists' });
+  }
+  
+  // Check if email already exists
+  if (users.find(user => user.email === email)) {
+    return res.status(400).json({ success: false, message: 'Email already exists' });
+  }
+  
+  // Add new user (in production, hash the password!)
+  const newUser = {
+    id: users.length + 1,
+    username,
+    password,
+    name: name || username, // Use username as name if not provided
+    email: email || `${username}@example.com` // Use default email if not provided
+  };
+  
+  users.push(newUser);
+  
+  console.log(`New user registered: ${username}`);
+  res.json({ success: true, message: 'User registered successfully', user: { username: newUser.username, name: newUser.name } });
 });
 
 // Admin login endpoint
