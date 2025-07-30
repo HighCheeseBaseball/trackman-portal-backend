@@ -35,7 +35,6 @@ if (!fs.existsSync(videosDir)) {
 let users = [
   { id: 1, username: "dom.stagliano", password: "password123", name: "Dom Stagliano", email: "stags@example.com" },
   { id: 2, username: "michael.kelly", password: "password123", name: "Michael Kelly", email: "michael@example.com" },
-  { id: 3, username: "spencer.stockton", password: "Luzardo", name: "Spencer Stockton", email: "stockton@test.com" },
 ];
 
 // Endpoint to fetch session data and download videos (MOCK VERSION)
@@ -48,7 +47,8 @@ app.get('/api/fetch-videos', async (req, res) => {
     { player: "Dom Stagliano", date: "2025-07-18", filename: "Stags_07_18_P02.mp4" },
     { player: "Michael Kelly", date: "2025-07-26", filename: "Michael_Kelly_07_26_P01.mp4" },
     {player: "Michael Kelly", date: "2025-07-26", filename: "Michael_Kelly_07_26_P02.mp4" },
-    {player: "Spencer Stockton", date: "2025-07-26", filename: "Luzardo_Side.mp4" }
+    {player: "Spencer Stockton", date: "2025-07-26", filename: "Luzardo_Side.mp4" },
+    {player: "Nina Tavarone", date: "2025-07-26", filename: "Nina_Cute_As_Hell_:).mp4" }
   ];
   
   // Filter by player if requested
