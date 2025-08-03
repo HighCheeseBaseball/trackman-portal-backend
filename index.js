@@ -148,6 +148,104 @@ app.get('/api/fetch-videos', async (req, res) => {
   }
 });
 
+// Fetch videos for specific user by PlayerID
+app.get('/api/user-videos', async (req, res) => {
+  const { username } = req.query;
+  
+  // Find user and get their PlayerID
+  const user = users.find(u => u.username === username);
+  if (!user || !user.pitcherId) {
+    return res.status(401).json({ error: 'User not found or no PlayerID assigned' });
+  }
+  
+  const {
+    TRACKMAN_USERNAME,
+    TRACKMAN_PASSWORD,
+    TRACKMAN_CLIENT_ID,
+    TRACKMAN_TEAM_ID
+  } = process.env;
+
+  const url = 'https://api.trackmanbaseball.com/api/v2/postsession';
+  const params = {
+    teamId: TRACKMAN_TEAM_ID,
+    fromDate: '2025-01-01',
+    toDate: '2025-12-31'
+  };
+  const headers = { ClientId: TRACKMAN_CLIENT_ID };
+
+  try {
+    const response = await axios.get(url, {
+      headers,
+      params,
+      auth: { username: TRACKMAN_USERNAME, password: TRACKMAN_PASSWORD }
+    });
+
+    const data = response.data;
+    const videoList = [];
+    const userPlayerId = user.pitcherId;
+
+    for (const session of data) {
+      const player = session.playerName || 'unknown';
+      const playerId = session.playerId; // Get PlayerID from TrackMan
+      const mediaUrl = session.mediaUrl;
+      const date = (session.date || 'unknown').replace(/\//g, '-');
+      
+      // Only include videos that match the user's PlayerID
+      if (mediaUrl && playerId === userPlayerId) {
+        const filename = `${player.replace(/ /g, '_')}_${date}.mp4`;
+        
+        // Check if video already exists in S3
+        try {
+          await s3.headObject({
+            Bucket: process.env.AWS_S3_BUCKET,
+            Key: filename
+          }).promise();
+          
+          // Video exists in S3, add to list
+          videoList.push({ player, date, filename, playerId });
+          console.log(`Video ${filename} already exists in S3 for PlayerID: ${playerId}`);
+          
+        } catch (err) {
+          if (err.code === 'NotFound') {
+            // Video doesn't exist in S3, download and upload
+            try {
+              console.log(`Downloading ${filename} from TrackMan for PlayerID: ${playerId}...`);
+              const videoResp = await axios.get(mediaUrl, { responseType: 'stream' });
+              
+              // Upload to S3
+              const uploadParams = {
+                Bucket: process.env.AWS_S3_BUCKET,
+                Key: filename,
+                Body: videoResp.data,
+                ContentType: 'video/mp4'
+              };
+              
+              await s3.upload(uploadParams).promise();
+              console.log(`Uploaded ${filename} to S3 for PlayerID: ${playerId}`);
+              
+              videoList.push({ player, date, filename, playerId });
+              
+            } catch (uploadErr) {
+              console.error(`Failed to upload ${filename}: ${uploadErr.message}`);
+              continue;
+            }
+          } else {
+            console.error(`Error checking S3 for ${filename}: ${err.message}`);
+            continue;
+          }
+        }
+      }
+    }
+      
+    console.log(`Returning ${videoList.length} videos for PlayerID: ${userPlayerId}`);
+    res.json(videoList);
+    
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch videos' });
+  }
+});
+
 // Login endpoint
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
@@ -155,7 +253,7 @@ app.post('/api/login', (req, res) => {
   const user = users.find(u => u.username === username && u.password === password);
   
   if (user) {
-    res.json({ success: true, user: { username: user.username, name: user.name } });
+    res.json({ success: true, user: { username: user.username, name: user.name, pitcherId: user.pitcherId } });
   } else {
     res.status(401).json({ success: false, message: "Invalid credentials" });
   }
@@ -206,6 +304,7 @@ app.post('/api/register', (req, res) => {
   console.log(`New user registered: ${username} with PitcherID: ${pitcherId}`);
   res.json({ success: true, message: 'User registered successfully', user: { username: newUser.username, name: newUser.name } });
 });
+
 // Admin login endpoint
 app.post('/api/admin/login', (req, res) => {
   const { username, password } = req.body;
@@ -221,19 +320,20 @@ app.post('/api/admin/login', (req, res) => {
 // Get all users (admin only)
 app.get('/api/admin/users', (req, res) => {
   // In a real app, you'd check admin authentication here
-  res.json(users.map(user => ({ id: user.id, username: user.username, name: user.name, email: user.email })));
+  res.json(users.map(user => ({ id: user.id, username: user.username, name: user.name, email: user.email, pitcherId: user.pitcherId })));
 });
 
 // Add new user (admin only)
 app.post('/api/admin/users', (req, res) => {
-  const { username, password, name, email } = req.body;
+  const { username, password, name, email, pitcherId } = req.body;
   
   const newUser = {
     id: users.length + 1,
     username,
     password,
     name,
-    email
+    email,
+    pitcherId
   };
   
   users.push(newUser);
