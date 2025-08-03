@@ -165,7 +165,13 @@ app.post('/api/login', (req, res) => {
 app.post('/api/register', (req, res) => {
   console.log('Registration request received:', req.body);
   
-  const { username, password, name, email } = req.body;
+  const { username, password, name, email, pitcherId } = req.body;
+  
+  // Validate PitcherID
+  if (!pitcherId || pitcherId.trim() === '') {
+    console.log('Missing PitcherID');
+    return res.status(400).json({ success: false, message: 'PitcherID is required' });
+  }
   
   // Check if user already exists
   if (users.find(user => user.username === username)) {
@@ -179,21 +185,27 @@ app.post('/api/register', (req, res) => {
     return res.status(400).json({ success: false, message: 'Email already exists' });
   }
   
+  // Check if PitcherID is already registered
+  if (users.find(user => user.pitcherId === pitcherId)) {
+    console.log('PitcherID already registered:', pitcherId);
+    return res.status(400).json({ success: false, message: 'PitcherID is already registered' });
+  }
+  
   // Add new user (in production, hash the password!)
   const newUser = {
     id: users.length + 1,
     username,
     password,
     name: name || username,
-    email: email || `${username}@example.com`
+    email: email || `${username}@example.com`,
+    pitcherId: pitcherId.trim()
   };
   
   users.push(newUser);
   
-  console.log(`New user registered: ${username}`);
+  console.log(`New user registered: ${username} with PitcherID: ${pitcherId}`);
   res.json({ success: true, message: 'User registered successfully', user: { username: newUser.username, name: newUser.name } });
 });
-
 // Admin login endpoint
 app.post('/api/admin/login', (req, res) => {
   const { username, password } = req.body;
